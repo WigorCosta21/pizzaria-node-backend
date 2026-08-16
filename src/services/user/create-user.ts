@@ -1,6 +1,5 @@
+import { hash } from "bcrypt";
 import { prisma } from "../../prisma";
-import bcrypt from "bcrypt";
-
 interface CreateUserProps {
   name: string;
   email: string;
@@ -17,7 +16,7 @@ export class CreateUserService {
       throw new Error("User is already exists.");
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
@@ -25,8 +24,15 @@ export class CreateUserService {
         email,
         password: passwordHash,
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
     });
 
-    return user.name;
+    return user;
   }
 }
