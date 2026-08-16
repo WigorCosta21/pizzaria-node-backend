@@ -5,6 +5,7 @@ import { authUserSchema, userSchema } from "./schemas/user-schema";
 import { AuthUserController } from "./controllers/user/auth-user-controller";
 import { DetailsUserController } from "./controllers/user/details-user";
 import { isAuthenticated } from "./middlewares/isAuthenticated";
+import { CreateCategoryController } from "./controllers/category/create-category";
 
 const router = Router();
 
@@ -21,5 +22,13 @@ router.post(
 );
 
 router.get("/me", isAuthenticated, new DetailsUserController().handle);
+
+// Category
+
+router.post(
+  "/category",
+  isAuthenticated,
+  new CreateCategoryController().handle,
+);
 
 export default router;
