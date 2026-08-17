@@ -9,8 +9,9 @@ import { DetailsUserController } from "./controllers/user/details-user";
 import { isAuthenticated } from "./middlewares/isAuthenticated";
 import { CreateCategoryController } from "./controllers/category/create-category";
 import { ListCategoriesController } from "./controllers/category/list-categories";
+import { ListCategoryProductsController } from "./controllers/category/list-category-products";
 import { isAdmin } from "./middlewares/isAdmin";
-import { createCategorySchema } from "./schemas/category-schema";
+import { createCategorySchema, listCategoryProductsSchema } from "./schemas/category-schema";
 import { CreateProductController } from "./controllers/product/create-product";
 import { ListProductsController } from "./controllers/product/list-products";
 import {
@@ -42,6 +43,13 @@ router.get(
   "/categories",
   isAuthenticated,
   new ListCategoriesController().handle,
+);
+
+router.get(
+  "/category/product",
+  isAuthenticated,
+  validationSchema(listCategoryProductsSchema),
+  new ListCategoryProductsController().handle,
 );
 
 router.post(
