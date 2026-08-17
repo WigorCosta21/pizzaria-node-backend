@@ -12,7 +12,11 @@ import { ListCategoriesController } from "./controllers/category/list-categories
 import { isAdmin } from "./middlewares/isAdmin";
 import { createCategorySchema } from "./schemas/category-schema";
 import { CreateProductController } from "./controllers/product/create-product";
-import { createProductSchema } from "./schemas/product-schema";
+import { ListProductsController } from "./controllers/product/list-products";
+import {
+  createProductSchema,
+  listProductSchema,
+} from "./schemas/product-schema";
 
 const router = Router();
 const upload = multer(uploadConfig);
@@ -33,7 +37,11 @@ router.get("/me", isAuthenticated, new DetailsUserController().handle);
 
 // Category
 
-router.get("/category", isAuthenticated, new ListCategoriesController().handle);
+router.get(
+  "/categories",
+  isAuthenticated,
+  new ListCategoriesController().handle,
+);
 
 router.post(
   "/category",
@@ -44,6 +52,13 @@ router.post(
 );
 
 // Product
+
+router.get(
+  "/products",
+  isAuthenticated,
+  validationSchema(listProductSchema),
+  new ListProductsController().handle,
+);
 
 router.post(
   "/product",

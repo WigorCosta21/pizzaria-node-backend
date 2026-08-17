@@ -8,10 +8,11 @@
 4. [Estrutura de Pastas](#estrutura-de-pastas)
 5. [Modelagem do Banco de Dados](#modelagem-do-banco-de-dados)
 6. [Middlewares](#middlewares)
-7. [Validação com Schemas](#validação-com-schemas)
-8. [Endpoints](#endpoints)
-9. [Fluxo de Requisição](#fluxo-de-requisição)
-10. [Configurações do Projeto](#configurações-do-projeto)
+7. [Upload de Arquivos](#upload-de-arquivos)
+8. [Validação com Schemas](#validação-com-schemas)
+9. [Endpoints](#endpoints)
+10. [Fluxo de Requisição](#fluxo-de-requisição)
+11. [Configurações do Projeto](#configurações-do-projeto)
 
 ---
 
@@ -50,27 +51,34 @@ Requisição HTTP → Rotas → Middlewares → Controller → Service → Banco
 
 ### Dependências de Produção
 
-| Tecnologia         | Versão  | Finalidade                                   |
-| ------------------ | ------- | -------------------------------------------- |
-| **express**        | ^5.1.0  | Framework web para criação de APIs REST      |
-| **@prisma/client** | ^6.19.0 | ORM para comunicação com banco de dados      |
-| **typescript**     | ^5.9.3  | Superset JavaScript com tipagem estática     |
-| **zod**            | ^4.1.12 | Biblioteca de validação de schemas e tipagem |
-| **bcryptjs**       | ^3.0.3  | Criptografia de senhas                       |
-| **jsonwebtoken**   | ^9.0.2  | Geração e validação de tokens JWT            |
-| **cors**           | ^2.8.5  | Middleware para habilitar CORS               |
-| **dotenv**         | ^17.2.3 | Carregamento de variáveis de ambiente        |
-| **tsx**            | ^4.20.6 | Executor TypeScript para desenvolvimento     |
+| Tecnologia             | Versão  | Finalidade                                          |
+| ---------------------- | ------- | --------------------------------------------------- |
+| **express**            | ^5.1.0  | Framework web para criação de APIs REST             |
+| **@prisma/client**     | ^7.9.1  | ORM para comunicação com banco de dados             |
+| **@prisma/adapter-pg** | ^7.9.1  | Adapter do Prisma para o driver `pg` (PostgreSQL)   |
+| **pg**                 | ^8.23.0 | Driver PostgreSQL para Node.js                      |
+| **typescript**         | ^5.9.3  | Superset JavaScript com tipagem estática            |
+| **zod**                | ^4.1.12 | Biblioteca de validação de schemas e tipagem        |
+| **bcrypt**             | ^6.0.0  | Criptografia de senhas                              |
+| **jsonwebtoken**       | ^9.0.3  | Geração e validação de tokens JWT                   |
+| **cors**               | ^2.8.5  | Middleware para habilitar CORS                      |
+| **dotenv**             | ^17.2.3 | Carregamento de variáveis de ambiente               |
+| **tsx**                | ^4.20.6 | Executor TypeScript para desenvolvimento            |
+| **multer**             | ^2.0.2  | Middleware para upload de arquivos                  |
+| **cloudinary**         | ^2.8.0  | Serviço de armazenamento e gerenciamento de imagens |
 
 ### Dependências de Desenvolvimento
 
-| Tecnologia              | Versão   | Finalidade                    |
-| ----------------------- | -------- | ----------------------------- |
-| **@types/express**      | ^5.0.5   | Tipos TypeScript para Express |
-| **@types/cors**         | ^2.8.19  | Tipos TypeScript para CORS    |
-| **@types/jsonwebtoken** | ^9.0.10  | Tipos TypeScript para JWT     |
-| **@types/node**         | ^24.10.0 | Tipos TypeScript para Node.js |
-| **prisma**              | ^6.19.0  | CLI do Prisma ORM             |
+| Tecnologia              | Versão   | Finalidade                          |
+| ----------------------- | -------- | ----------------------------------- |
+| **@types/bcrypt**       | ^6.0.0   | Tipos TypeScript para bcrypt        |
+| **@types/express**      | ^5.0.5   | Tipos TypeScript para Express       |
+| **@types/cors**         | ^2.8.19  | Tipos TypeScript para CORS          |
+| **@types/jsonwebtoken** | ^9.0.10  | Tipos TypeScript para JWT           |
+| **@types/multer**       | ^2.0.0   | Tipos TypeScript para Multer        |
+| **@types/node**         | ^24.10.0 | Tipos TypeScript para Node.js       |
+| **@types/pg**           | ^8.18.0  | Tipos TypeScript para o driver `pg` |
+| **prisma**              | ^7.5.0   | CLI do Prisma ORM                   |
 
 ### Banco de Dados
 
@@ -93,9 +101,15 @@ backend/
 │   │   └── express/
 │   │       └── index.d.ts    # Extensão de tipos do Express
 │   ├── config/               # Configurações da aplicação
+│   │   ├── cloudinary.ts     # Configuração do Cloudinary
+│   │   └── multer.ts         # Configuração do Multer (upload)
 │   ├── controllers/          # Controllers (recebem requisições)
 │   │   ├── category/
-│   │   │   └── CreateCategoryController.ts
+│   │   │   ├── CreateCategoryController.ts
+│   │   │   └── ListCategoryController.ts
+│   │   ├── product/
+│   │   │   ├── CreateProductController.ts
+│   │   │   └── ListProductController.ts
 │   │   └── user/
 │   │       ├── AuthUserController.ts
 │   │       ├── CreateUserController.ts
@@ -111,10 +125,15 @@ backend/
 │   │   └── index.ts
 │   ├── schemas/              # Schemas de validação Zod
 │   │   ├── categorySchema.ts
+│   │   ├── productSchema.ts
 │   │   └── userSchema.ts
 │   ├── services/             # Services (lógica de negócio)
 │   │   ├── category/
-│   │   │   └── CreateCategoryService.ts
+│   │   │   ├── CreateCategoryService.ts
+│   │   │   └── ListCategoryService.ts
+│   │   ├── product/
+│   │   │   ├── CreateProductService.ts
+│   │   │   └── ListProductService.ts
 │   │   └── user/
 │   │       ├── AuthUserService.ts
 │   │       ├── CreateUserService.ts
@@ -340,6 +359,76 @@ router.post(
 
 ---
 
+## 📤 Upload de Arquivos
+
+### Configuração do Multer (`config/multer.ts`)
+
+**Função**: Middleware para processar upload de arquivos (imagens de produtos).
+
+**Configurações**:
+
+- **Storage**: `memoryStorage()` - Mantém o arquivo em memória (buffer) ao invés de salvar no disco
+- **Limite de tamanho**: 4MB por arquivo
+- **Formatos aceitos**: JPEG, JPG, PNG
+
+**Validação de Tipo**:
+
+```typescript
+const allowedMimes = ["image/jpeg", "image/jpg", "image/png"];
+```
+
+**Fluxo**:
+
+1. Recebe o arquivo via `multipart/form-data`
+2. Valida o tipo MIME do arquivo
+3. Verifica o tamanho (máx 4MB)
+4. Armazena o arquivo em memória como Buffer
+5. Disponibiliza via `req.file.buffer`
+
+**Uso nas Rotas**:
+
+```typescript
+router.post("/product", upload.single("file"), ...);
+```
+
+**Erros**:
+
+- Formato inválido: "Formato de arquivo invalido, use apenas JPG, JPEG, PNG."
+- Tamanho excedido: Retorna erro automaticamente se > 4MB
+
+---
+
+### Configuração do Cloudinary (`config/cloudinary.ts`)
+
+**Função**: Serviço de armazenamento e CDN para imagens de produtos.
+
+**Integração**:
+
+- Recebe o buffer do arquivo do Multer
+- Faz upload usando streaming (sem salvar no disco)
+- Retorna URL pública da imagem hospedada
+
+**Configuração de Upload**:
+
+- **Pasta**: `products/` - Organiza imagens na pasta products do Cloudinary
+- **Resource Type**: `image`
+- **Public ID**: `{timestamp}-{nome-original}` - Nome único para evitar conflitos
+
+**Fluxo no CreateProductService**:
+
+1. Cria stream do buffer recebido
+2. Faz pipe para o Cloudinary uploader
+3. Aguarda resposta com `secure_url`
+4. Salva a URL no campo `banner` do produto
+
+**Observações**:
+
+- Imagens ficam hospedadas permanentemente no Cloudinary
+- URLs são otimizadas e servidas via CDN
+- Suporta transformações de imagem (redimensionamento, corte, etc.)
+
+---
+
 ## ✅ Validação com Schemas
 
 Utilizamos **Zod** para validação de dados de entrada. Os schemas ficam organizados na pasta `src/schemas/`.
@@ -399,7 +488,77 @@ Valida criação de categorias:
 
 ---
 
+### Product Schemas (`schemas/productSchema.ts`)
+
+#### **createProductSchema**
+
+Valida criação de produtos:
+
+```typescript
+{
+  body: {
+    name: string (min: 1 caractere),
+    price: string (obrigatório, valor em centavos),
+    description: string (min: 1 caractere),
+    category_id: string (UUID da categoria)
+  }
+}
+```
+
+**Mensagens de erro**:
+
+- Nome inválido: "O nome do produto é obrigatório"
+- Preço inválido: "O valor do produto é obrigatório"
+- Descrição inválida: "A descrição do produto é obrigatória"
+- Categoria inválida: "A Categoria do produto é obrigatória"
+
+**Observações**:
+
+- O campo `price` é enviado como string e convertido para inteiro no controller
+- Além dos campos do schema, a rota exige um arquivo de imagem via `multipart/form-data`
+
+---
+
+#### **listProductSchema**
+
+Valida listagem de produtos com filtro:
+
+```typescript
+{
+  query: {
+    disabled: "true" | "false" (opcional, padrão: "false")
+  }
+}
+```
+
+**Mensagens de erro**:
+
+- Valor inválido: "O parâmetro disabled deve ser 'true' ou 'false'"
+
+**Observações**:
+
+- O query param `disabled` é opcional
+- Valor padrão: `"false"` (retorna produtos ativos)
+- O valor é automaticamente convertido de string para boolean pelo Zod
+- Aceita apenas os valores literais "true" ou "false"
+
+---
+
 ## 🌐 Endpoints
+
+### 📋 Resumo de Rotas
+
+| Método | Rota      | Autenticação | Permissão   | Descrição                             |
+| ------ | --------- | ------------ | ----------- | ------------------------------------- |
+| POST   | /users    | ❌           | Pública     | Criar novo usuário                    |
+| POST   | /session  | ❌           | Pública     | Autenticar usuário (login)            |
+| GET    | /me       | ✅           | STAFF/ADMIN | Obter dados do usuário logado         |
+| POST   | /category | ✅           | ADMIN       | Criar nova categoria                  |
+| GET    | /category | ✅           | STAFF/ADMIN | Listar todas as categorias            |
+| POST   | /product  | ✅           | ADMIN       | Criar novo produto (com imagem)       |
+| GET    | /products | ✅           | STAFF/ADMIN | Listar produtos (filtro por disabled) |
+
+---
 
 ### **Usuários**
 
@@ -533,6 +692,185 @@ Authorization: Bearer <token>
 
 ---
 
+#### **GET /category**
+
+Lista todas as categorias cadastradas.
+
+**Middlewares**: `isAuthenticated`
+
+**Permissão**: Usuários autenticados (STAFF ou ADMIN)
+
+**Headers**:
+
+```
+Authorization: Bearer <token>
+```
+
+**Resposta de Sucesso (200)**:
+
+```json
+[
+  {
+    "id": "uuid-categoria-1",
+    "name": "Pizzas Salgadas",
+    "createdAt": "2025-11-11T10:30:00.000Z"
+  },
+  {
+    "id": "uuid-categoria-2",
+    "name": "Pizzas Doces",
+    "createdAt": "2025-11-11T10:35:00.000Z"
+  }
+]
+```
+
+**Observações**:
+
+- As categorias são retornadas ordenadas por data de criação (mais recentes primeiro)
+- Retorna apenas os campos: `id`, `name` e `createdAt`
+
+---
+
+### **Produtos**
+
+#### **POST /product**
+
+Cria um novo produto com upload de imagem.
+
+**Middlewares**: `isAuthenticated`, `isAdmin`, `upload.single("file")`, `validateSchema(createProductSchema)`
+
+**Permissão**: Apenas usuários com role ADMIN
+
+**Headers**:
+
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+**Body (FormData)**:
+
+```
+name: "Pizza Margherita"
+price: "3500"  (valor em centavos - R$ 35,00)
+description: "Molho de tomate, mussarela e manjericão"
+category_id: "uuid-da-categoria"
+file: [arquivo de imagem]
+```
+
+**Resposta de Sucesso (200)**:
+
+```json
+{
+  "id": "uuid-gerado",
+  "name": "Pizza Margherita",
+  "price": 3500,
+  "description": "Molho de tomate, mussarela e manjericão",
+  "category_id": "uuid-da-categoria",
+  "banner": "https://res.cloudinary.com/.../products/123456-image.jpg",
+  "createdAt": "2025-11-11T10:30:00.000Z"
+}
+```
+
+**Validações de Arquivo**:
+
+- **Formatos aceitos**: JPEG, JPG, PNG
+- **Tamanho máximo**: 4MB
+- **Campo obrigatório**: O arquivo de imagem é obrigatório
+
+**Observações**:
+
+- O campo `price` deve ser enviado como string e representa o valor em centavos
+- A imagem é enviada para o Cloudinary e a URL é armazenada no campo `banner`
+- Valida se a categoria informada existe no banco de dados
+- A requisição deve ser feita como `multipart/form-data`
+
+**Erros Possíveis**:
+
+- `400`: "A imagem do produto é obrigatória" - Quando nenhum arquivo é enviado
+- `400`: "Formato de arquivo invalido, use apenas JPG, JPEG, PNG." - Formato não suportado
+- `400`: "Categoria não encontrada!" - UUID de categoria inválido
+- `400`: "Erro ao fazer o upload a imagem!" - Falha no upload para Cloudinary
+
+---
+
+#### **GET /products**
+
+Lista todos os produtos cadastrados com filtro de status.
+
+**Middlewares**: `isAuthenticated`, `validateSchema(listProductSchema)`
+
+**Permissão**: Usuários autenticados (STAFF ou ADMIN)
+
+**Headers**:
+
+```
+Authorization: Bearer <token>
+```
+
+**Query Parameters**:
+
+```
+disabled: "true" | "false" (opcional, padrão: "false")
+```
+
+**Exemplos de Uso**:
+
+```
+GET /products                    → Retorna produtos com disabled=false
+GET /products?disabled=false     → Retorna produtos com disabled=false
+GET /products?disabled=true      → Retorna produtos com disabled=true
+```
+
+**Resposta de Sucesso (200)**:
+
+```json
+[
+  {
+    "id": "uuid-produto-1",
+    "name": "Pizza Margherita",
+    "price": 3500,
+    "description": "Molho de tomate, mussarela e manjericão",
+    "banner": "https://res.cloudinary.com/.../products/123-image.jpg",
+    "disabled": false,
+    "category_id": "uuid-da-categoria",
+    "createdAt": "2025-11-11T10:30:00.000Z",
+    "category": {
+      "id": "uuid-da-categoria",
+      "name": "Pizzas Salgadas"
+    }
+  },
+  {
+    "id": "uuid-produto-2",
+    "name": "Pizza Calabresa",
+    "price": 4000,
+    "description": "Calabresa, cebola e mussarela",
+    "banner": "https://res.cloudinary.com/.../products/124-image.jpg",
+    "disabled": false,
+    "category_id": "uuid-da-categoria",
+    "createdAt": "2025-11-11T10:35:00.000Z",
+    "category": {
+      "id": "uuid-da-categoria",
+      "name": "Pizzas Salgadas"
+    }
+  }
+]
+```
+
+**Observações**:
+
+- Os produtos são retornados ordenados por data de criação (mais recentes primeiro)
+- Retorna os campos: `id`, `name`, `price`, `description`, `banner`, `disabled`, `category_id`, `createdAt`
+- Inclui os dados da categoria relacionada (`id` e `name`)
+- Se o query param `disabled` não for enviado, o valor padrão é `false`
+- O query param aceita apenas os valores "true" ou "false" (strings)
+
+**Erros Possíveis**:
+
+- `400`: "O parâmetro disabled deve ser 'true' ou 'false'" - Valor inválido para o query param
+- `401`: Token não fornecido ou inválido
+
+---
+
 ## 🔄 Fluxo de Requisição
 
 ### Exemplo Completo: Criação de Usuário
@@ -587,6 +925,89 @@ Authorization: Bearer <token>
    - Criação no banco
    ↓
 6. Resposta HTTP 201
+```
+
+---
+
+### Fluxo com Upload de Arquivo (Produto)
+
+```
+1. POST /product (multipart/form-data)
+   ↓
+2. Middleware: isAuthenticated
+   - Valida token JWT
+   - Se inválido → 401
+   ↓
+3. Middleware: isAdmin
+   - Verifica role === "ADMIN"
+   - Se não for admin → 401
+   ↓
+4. Middleware: upload.single("file")
+   - Processa upload do arquivo
+   - Valida formato (JPEG, JPG, PNG)
+   - Valida tamanho (máx 4MB)
+   - Armazena em memória (buffer)
+   - Adiciona arquivo em req.file
+   - Se inválido → 400
+   ↓
+5. Middleware: validateSchema(createProductSchema)
+   - Valida name, price, description, category_id
+   - Se inválido → 400
+   ↓
+6. CreateProductController.handle()
+   - Extrai dados do req.body
+   - Verifica se req.file existe
+   - Se não existe → throw Error("A imagem do produto é obrigatória")
+   - Instancia CreateProductService
+   ↓
+7. CreateProductService.execute()
+   - Verifica se categoria existe
+   - Se não existe → throw Error("Categoria não encontrada!")
+   - Cria stream do buffer da imagem
+   - Faz upload para Cloudinary
+   - Recebe URL da imagem
+   - Cria produto no banco com URL da imagem
+   - Retorna dados do produto
+   ↓
+8. CreateProductController.handle()
+   - Retorna res.json(product)
+   ↓
+9. Resposta HTTP 200 com dados do produto
+```
+
+---
+
+### Fluxo de Listagem com Query Params (Produtos)
+
+```
+1. GET /products?disabled=false
+   ↓
+2. Middleware: isAuthenticated
+   - Valida token JWT
+   - Se inválido → 401
+   ↓
+3. Middleware: validateSchema(listProductSchema)
+   - Valida query param 'disabled'
+   - Se não enviado → usa padrão "false"
+   - Se inválido (valor diferente de "true"/"false") → 400
+   - Converte string para boolean
+   - Adiciona ao req.query
+   ↓
+4. ListProductController.handle()
+   - Extrai 'disabled' do req.query
+   - Se undefined → usa false como padrão
+   - Instancia ListProductService
+   ↓
+5. ListProductService.execute()
+   - Busca produtos no banco com where: { disabled }
+   - Ordena por createdAt desc (mais recentes primeiro)
+   - Inclui dados da categoria relacionada
+   - Retorna array de produtos
+   ↓
+6. ListProductController.handle()
+   - Retorna res.status(200).json(products)
+   ↓
+7. Resposta HTTP 200 com array de produtos
 ```
 
 ---
@@ -682,12 +1103,27 @@ JWT_SECRET="sua-chave-secreta-aqui"
 
 # Server
 PORT=3333
+
+# Cloudinary (Upload de Imagens)
+CLOUDINARY_CLOUD_NAME="seu-cloud-name"
+CLOUDINARY_API_KEY="sua-api-key"
+CLOUDINARY_API_SECRET="seu-api-secret"
 ```
 
 **Variáveis Obrigatórias**:
 
 - `DATABASE_URL`: String de conexão PostgreSQL
 - `JWT_SECRET`: Chave secreta para assinar tokens JWT
+- `CLOUDINARY_CLOUD_NAME`: Nome da sua conta no Cloudinary
+- `CLOUDINARY_API_KEY`: Chave de API do Cloudinary
+- `CLOUDINARY_API_SECRET`: Chave secreta de API do Cloudinary
+
+**Como obter credenciais do Cloudinary**:
+
+1. Criar conta em [cloudinary.com](https://cloudinary.com)
+2. Acessar Dashboard
+3. Copiar credenciais: Cloud Name, API Key e API Secret
+4. Adicionar no arquivo `.env`
 
 ---
 
@@ -769,6 +1205,12 @@ npx prisma generate
 
 7. **Prisma Client Customizado**: Cliente gerado em `src/generated/prisma` para melhor organização.
 
+8. **Upload de Imagens**: Sistema utiliza Multer para processar uploads e Cloudinary para armazenamento permanente. Imagens não são salvas no servidor local.
+
+9. **Memory Storage**: Multer configurado com `memoryStorage()` para processar arquivos em memória, otimizando o upload direto para Cloudinary.
+
+10. **Validação de Tipos de Arquivo**: Sistema aceita apenas imagens JPEG, JPG e PNG com tamanho máximo de 4MB.
+
 ---
 
 ## 🚀 Como Iniciar o Projeto
@@ -786,21 +1228,36 @@ cp .env.example .env
 # Editar .env com suas configurações
 ```
 
-3. **Executar migrações**:
+**Variáveis obrigatórias no `.env`**:
+
+- `DATABASE_URL` - Conexão com PostgreSQL
+- `JWT_SECRET` - Chave secreta JWT
+- `CLOUDINARY_CLOUD_NAME` - Nome da conta Cloudinary
+- `CLOUDINARY_API_KEY` - API Key do Cloudinary
+- `CLOUDINARY_API_SECRET` - API Secret do Cloudinary
+
+3. **Configurar Cloudinary**:
+
+- Criar conta gratuita em [cloudinary.com](https://cloudinary.com)
+- Copiar credenciais do Dashboard
+- Adicionar credenciais no arquivo `.env`
+
+4. **Executar migrações**:
 
 ```bash
 npx prisma migrate dev
 ```
 
-4. **Iniciar servidor**:
+5. **Iniciar servidor**:
 
 ```bash
 npm run dev
 ```
 
-5. **Servidor rodando em**: `http://localhost:3333`
+6. **Servidor rodando em**: `http://localhost:3333`
 
 ---
 
-**Documento gerado em**: 11/11/2025  
-**Versão do Projeto**: 1.0.0
+**Documento atualizado em**: 16/08/2026  
+**Versão do Projeto**: 1.2.0  
+**Última atualização**: Adicionada rota GET /products com filtro por status (disabled)
