@@ -17,6 +17,7 @@ import {
   createProductSchema,
   listProductSchema,
 } from "./schemas/product-schema";
+import { DeleteProductController } from "./controllers/product/delete-product";
 
 const router = Router();
 const upload = multer(uploadConfig);
@@ -67,6 +68,13 @@ router.post(
   upload.single("file"),
   validationSchema(createProductSchema),
   new CreateProductController().handle,
+);
+
+router.delete(
+  "/product",
+  isAuthenticated,
+  isAdmin,
+  new DeleteProductController().handle,
 );
 
 export default router;
