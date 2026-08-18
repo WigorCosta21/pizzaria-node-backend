@@ -11,7 +11,10 @@ import { CreateCategoryController } from "./controllers/category/create-category
 import { ListCategoriesController } from "./controllers/category/list-categories";
 import { ListCategoryProductsController } from "./controllers/category/list-category-products";
 import { isAdmin } from "./middlewares/isAdmin";
-import { createCategorySchema, listCategoryProductsSchema } from "./schemas/category-schema";
+import {
+  createCategorySchema,
+  listCategoryProductsSchema,
+} from "./schemas/category-schema";
 import { CreateProductController } from "./controllers/product/create-product";
 import { ListProductsController } from "./controllers/product/list-products";
 import {
@@ -19,6 +22,9 @@ import {
   listProductSchema,
 } from "./schemas/product-schema";
 import { DeleteProductController } from "./controllers/product/delete-product";
+import { CreateOrderController } from "./controllers/order/create-order";
+import { createOrderSchema } from "./schemas/order-schema";
+import { ListOrdersController } from "./controllers/order/list-orders";
 
 const router = Router();
 const upload = multer(uploadConfig);
@@ -84,5 +90,16 @@ router.delete(
   isAdmin,
   new DeleteProductController().handle,
 );
+
+// Order
+
+router.post(
+  "/order",
+  isAuthenticated,
+  validationSchema(createOrderSchema),
+  new CreateOrderController().handle,
+);
+
+router.get("/orders", isAuthenticated, new ListOrdersController().handle);
 
 export default router;
