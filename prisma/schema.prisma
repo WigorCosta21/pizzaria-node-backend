@@ -56,7 +56,7 @@ model Order {
   id     String  @id @default(uuid())
   table  Int
   status Boolean @default(false)
-  draft  Boolean @default(false)
+  draft  Boolean @default(true)
   name   String?
   items  Item[]
 
