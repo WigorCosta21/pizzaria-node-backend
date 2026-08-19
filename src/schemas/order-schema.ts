@@ -36,3 +36,13 @@ export const addItemSchema = z.object({
       }),
   }),
 });
+
+export const removeItemSchema = z.object({
+  query: z.object({
+    item_id: z
+      .string({
+        message: "Item must be a string",
+      })
+      .min(1, { message: "Item is required" }),
+  }),
+});

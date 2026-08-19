@@ -5,8 +5,6 @@ export class ListProductsController {
   async handle(req: Request, res: Response) {
     const disabled = req.query.disabled as string | undefined;
 
-    console.log(typeof disabled);
-
     const listProducts = new ListProductsService();
 
     const products = await listProducts.execute({
