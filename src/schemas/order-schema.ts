@@ -79,3 +79,13 @@ export const finishOrderSchema = z.object({
       .min(1, { message: "Order is required" }),
   }),
 });
+
+export const deleteOrderSchema = z.object({
+  query: z.object({
+    order_id: z
+      .string({
+        message: "Order id must be a string",
+      })
+      .min(1, { message: "Item is required" }),
+  }),
+});
