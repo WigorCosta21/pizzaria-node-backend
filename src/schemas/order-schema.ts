@@ -69,3 +69,13 @@ export const sendOrderSchema = z.object({
     }),
   }),
 });
+
+export const finishOrderSchema = z.object({
+  body: z.object({
+    order_id: z
+      .string({
+        message: "Order id must be a string",
+      })
+      .min(1, { message: "Order is required" }),
+  }),
+});

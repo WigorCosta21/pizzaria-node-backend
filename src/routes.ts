@@ -27,6 +27,7 @@ import {
   addItemSchema,
   createOrderSchema,
   detailOrderSchema,
+  finishOrderSchema,
   removeItemSchema,
   sendOrderSchema,
 } from "./schemas/order-schema";
@@ -35,6 +36,7 @@ import { AddItemOrderController } from "./controllers/order/add-item-order";
 import { RemoveItemOrderController } from "./controllers/order/remove-item-order";
 import { DetailOrderController } from "./controllers/order/detail-order";
 import { SendOrderController } from "./controllers/order/send-order";
+import { FinishOrderController } from "./controllers/order/finish-order";
 
 const router = Router();
 const upload = multer(uploadConfig);
@@ -124,6 +126,13 @@ router.put(
   isAuthenticated,
   validationSchema(sendOrderSchema),
   new SendOrderController().handle,
+);
+
+router.put(
+  "/order/finish",
+  isAuthenticated,
+  validationSchema(finishOrderSchema),
+  new FinishOrderController().handle,
 );
 
 router.post(
